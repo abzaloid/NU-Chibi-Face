@@ -16,10 +16,23 @@
 #
 import webapp2
 
+from google.appengine.api import memcache
+
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write('Hello world!')
 
+
+class WriteHandler(webapp2.RequestHandler):
+	def get(self):
+		memcache.set('data', self.request.get('data'))
+
+class GetHandler(webapp2.RequestHandler):
+	def get(self):
+		self.response.write(memcache.get('data'))
+
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    ('/write', WriteHandler),
+    ('/get', GetHandler),
 ], debug=True)
