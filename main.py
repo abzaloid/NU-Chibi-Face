@@ -16,12 +16,14 @@
 #
 import webapp2
 
+import json
+
 from google.appengine.api import memcache
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write('Hello world!')
-
+        memcache.set('data', "[]")
 
 class WriteHandler(webapp2.RequestHandler):
 	def get(self):
@@ -31,8 +33,35 @@ class GetHandler(webapp2.RequestHandler):
 	def get(self):
 		self.response.write(memcache.get('data'))
 
+class WriteToBufferHandler(webapp2.RequestHandler):
+	def get(self):
+		data = self.request.get('data')
+		if memcache.get('data') is None:
+			memcache.set('data', "[]")
+		p = json.loads(memcache.get('data'))
+		p.append(data)
+		memcache.set('data', json.dumps(p))
+
+class GetFromBufferHandler(webapp2.RequestHandler):
+	def get(self):
+		if memcache.get('data') is None:
+			memcache.set('data', "[]")
+		p = json.loads(memcache.get('data'))
+		result = ""
+		if p:
+			result = p[0]
+			if len(p) > 1:
+				p = p[1:]
+			else:
+				p = []
+		memcache.set('data', json.dumps(p))
+		self.response.write(result)
+
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/write', WriteHandler),
-    ('/get', GetHandler),
+    ('/write_old', WriteHandler),
+    ('/write', WriteToBufferHandler),
+    ('/get', GetFromBufferHandler),
+    ('/get_old', GetHandler),
 ], debug=True)
